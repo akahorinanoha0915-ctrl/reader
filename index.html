@@ -134,7 +134,20 @@
   .nav-btn:disabled { opacity: 0.3; cursor: default; }
   .btn-prev { background: #e0e0e0; color: #555; }
   .btn-speak { background: #DA77F2; color: #fff; }
+  .btn-auto  { background: #f783ac; color: #fff; }
+  .btn-auto.playing { background: #e64980; }
   .btn-next { background: #9c36b5; color: #fff; }
+
+  /* シーンのアニメーション（動画風） */
+  .page-scene .actor { display: inline-block; }
+  @keyframes sceneBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
+  @keyframes sceneFloat  { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-10px) rotate(4deg)} }
+  @keyframes sceneWiggle { 0%,100%{transform:rotate(-7deg)} 50%{transform:rotate(7deg)} }
+  .anim-bounce { animation: sceneBounce 1.6s ease-in-out infinite; }
+  .anim-float  { animation: sceneFloat 2.4s ease-in-out infinite; }
+  .anim-wiggle { animation: sceneWiggle 1.8s ease-in-out infinite; }
+  @keyframes pageIn { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+  .book.turn .page-scene, .book.turn .page-text, .book.turn .page-jp { animation: pageIn 0.45s ease; }
 
   .stamp-display {
     text-align: center;
@@ -182,36 +195,8 @@
   <h1>📖 えいごえほん</h1>
 </div>
 
-<!-- STORY LIST -->
-<div id="story-list">
-  <div class="story-card" data-story="0">
-    <div class="story-icon">🐣</div>
-    <div class="story-info">
-      <div class="story-title">The Little Chick</div>
-      <div class="story-level">⭐ やさしい・4ページ</div>
-      <div class="story-desc">ひよこのはじめての一日</div>
-    </div>
-    <div class="story-stamp" id="stamp-0">　</div>
-  </div>
-  <div class="story-card" data-story="1">
-    <div class="story-icon">🌟</div>
-    <div class="story-info">
-      <div class="story-title">Star's Wish</div>
-      <div class="story-level">⭐⭐ ふつう・5ページ</div>
-      <div class="story-desc">おほしさまのねがいごと</div>
-    </div>
-    <div class="story-stamp" id="stamp-1">　</div>
-  </div>
-  <div class="story-card" data-story="2">
-    <div class="story-icon">🦁</div>
-    <div class="story-info">
-      <div class="story-title">Leo's Big Day</div>
-      <div class="story-level">⭐⭐⭐ すこしむずかしい・6ページ</div>
-      <div class="story-desc">ライオンのレオのぼうけん</div>
-    </div>
-    <div class="story-stamp" id="stamp-2">　</div>
-  </div>
-</div>
+<!-- STORY LIST（STORIESからJSで自動生成） -->
+<div id="story-list"></div>
 
 <!-- READER -->
 <div id="reader">
@@ -229,6 +214,7 @@
   <div class="reader-controls">
     <button class="nav-btn btn-prev" id="btn-prev">◀ まえ</button>
     <button class="nav-btn btn-speak" id="btn-speak">🔊 よむ</button>
+    <button class="nav-btn btn-auto" id="btn-auto">▶ じどう</button>
     <button class="nav-btn btn-next" id="btn-next">つぎ ▶</button>
   </div>
   <div class="stamp-display" id="stamp-display"></div>
@@ -248,6 +234,7 @@
 const STORIES = [
   {
     title: 'The Little Chick',
+    icon: '🐣', level: '⭐ やさしい', desc: 'ひよこのはじめての一日',
     pages: [
       { scene:'🥚', en:'This is an egg.', jp:'これは たまごです。', words:{'egg':'たまご'} },
       { scene:'🐣', en:'The egg cracks open!', jp:'たまごが われました！', words:{'egg':'たまご','cracks':'われる','open':'あく'} },
@@ -257,6 +244,7 @@ const STORIES = [
   },
   {
     title: "Star's Wish",
+    icon: '🌟', level: '⭐⭐ ふつう', desc: 'おほしさまのねがいごと',
     pages: [
       { scene:'🌙', en:'It is night. The sky is dark.', jp:'よるです。そらは くらいです。', words:{'night':'よる','sky':'そら','dark':'くらい'} },
       { scene:'⭐', en:'One small star shines brightly.', jp:'ちいさな ほしが かがやいています。', words:{'small':'ちいさい','star':'ほし','shines':'かがやく','brightly':'あかるく'} },
@@ -267,6 +255,7 @@ const STORIES = [
   },
   {
     title: "Leo's Big Day",
+    icon: '🦁', level: '⭐⭐⭐ すこしむずかしい', desc: 'ライオンのレオのぼうけん',
     pages: [
       { scene:'🦁', en:'Leo is a big lion.', jp:'レオは おおきな ライオンです。', words:{'big':'おおきい','lion':'ライオン'} },
       { scene:'🌅', en:'He wakes up early in the morning.', jp:'かれは あさ はやく おきます。', words:{'wakes':'おきる','early':'はやい','morning':'あさ'} },
@@ -274,6 +263,39 @@ const STORIES = [
       { scene:'🐦', en:'He sees a small bird singing.', jp:'かれは ちいさな とりが うたっているのを みました。', words:{'sees':'みる','small':'ちいさい','bird':'とり','singing':'うたう'} },
       { scene:'🤝', en:'Leo says, "Hello, friend!"', jp:'レオは「こんにちは、ともだち！」といいました。', words:{'friend':'ともだち'} },
       { scene:'🦁🐦', en:'They play together all day. What a big day!', jp:'かれらは いちにちじゅう いっしょに あそびました。なんて すてきな いちにちでしょう！', words:{'play':'あそぶ','together':'いっしょ','day':'いちにち'} },
+    ]
+  },
+  {
+    title: 'The Hungry Bunny',
+    icon: '🐰', level: '⭐ やさしい', desc: 'おなかがすいた うさぎさん',
+    pages: [
+      { scene:'🐰', en:'This is a bunny.', jp:'これは うさぎです。', words:{'bunny':'うさぎ'} },
+      { scene:'😋', en:'The bunny is hungry.', jp:'うさぎは おなかが すいています。', words:{'bunny':'うさぎ','hungry':'おなかがすいた'} },
+      { scene:'🥕', en:'It finds a big carrot!', jp:'おおきな にんじんを みつけました！', words:{'finds':'みつける','big':'おおきい','carrot':'にんじん'} },
+      { scene:'🐰🥕', en:'Yum, yum! So good!', jp:'もぐもぐ！ とても おいしい！', words:{'good':'おいしい'} },
+    ]
+  },
+  {
+    title: 'Rainy Day Fun',
+    icon: '☔', level: '⭐⭐ ふつう', desc: 'あめのひも たのしいね',
+    pages: [
+      { scene:'🌧️', en:'It is raining today.', jp:'きょうは あめが ふっています。', words:{'raining':'あめがふる','today':'きょう'} },
+      { scene:'☔', en:'Mia opens her red umbrella.', jp:'ミアは あかい かさを ひらきます。', words:{'opens':'ひらく','red':'あかい','umbrella':'かさ'} },
+      { scene:'💦', en:'She jumps in a big puddle. Splash!', jp:'おおきな みずたまりに ジャンプ！ バシャン！', words:{'jumps':'ジャンプする','big':'おおきい','puddle':'みずたまり'} },
+      { scene:'🐸', en:'A frog jumps with her. Hello, frog!', jp:'かえるも いっしょに ジャンプ。こんにちは、かえるさん！', words:{'frog':'かえる','jumps':'ジャンプする','Hello':'こんにちは'} },
+      { scene:'🌈', en:'The rain stops. A rainbow comes out!', jp:'あめが やみました。にじが でてきました！', words:{'rain':'あめ','stops':'やむ','rainbow':'にじ'} },
+    ]
+  },
+  {
+    title: 'The Moon Rocket',
+    icon: '🚀', level: '⭐⭐⭐ すこしむずかしい', desc: 'つきへ いく ロケットのたび',
+    pages: [
+      { scene:'👦', en:'Ken builds a small rocket.', jp:'ケンは ちいさな ロケットを つくります。', words:{'builds':'つくる','small':'ちいさい','rocket':'ロケット'} },
+      { scene:'🚀', en:'Three, two, one... Blast off!', jp:'さん、に、いち…… はっしゃ！', words:{'Three':'さん','two':'に','one':'いち'} },
+      { scene:'🌌', en:'The rocket flies through the dark sky.', jp:'ロケットは くらい そらを とんでいきます。', words:{'flies':'とぶ','dark':'くらい','sky':'そら'} },
+      { scene:'🌕', en:'He lands on the big yellow moon.', jp:'かれは おおきな きいろい つきに つきました。', words:{'lands':'ちゃくりくする','yellow':'きいろい','moon':'つき'} },
+      { scene:'👽', en:'A friendly alien waves. "Welcome!"', jp:'やさしい うちゅうじんが てをふります。「ようこそ！」', words:{'friendly':'やさしい','alien':'うちゅうじん','waves':'てをふる','Welcome':'ようこそ'} },
+      { scene:'🌍', en:'Ken flies home. Good night, moon!', jp:'ケンは いえに かえります。おやすみ、つき！', words:{'home':'いえ','night':'よる','moon':'つき'} },
     ]
   }
 ];
@@ -283,8 +305,21 @@ let currentStory = 0;
 let currentPage = 0;
 
 function renderStampList() {
+  const list = document.getElementById('story-list');
+  list.innerHTML = '';
   STORIES.forEach((s, i) => {
-    document.getElementById(`stamp-${i}`).textContent = stamps[i] ? '🏅' : '';
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.innerHTML = `
+      <div class="story-icon">${s.icon}</div>
+      <div class="story-info">
+        <div class="story-title">${s.title}</div>
+        <div class="story-level">${s.level}・${s.pages.length}ページ</div>
+        <div class="story-desc">${s.desc}</div>
+      </div>
+      <div class="story-stamp">${stamps[i] ? '🏅' : ''}</div>`;
+    card.addEventListener('click', () => openStory(i));
+    list.appendChild(card);
   });
 }
 
@@ -301,7 +336,24 @@ function renderPage() {
   const story = STORIES[currentStory];
   const page = story.pages[currentPage];
   document.getElementById('page-num').textContent = `${currentPage+1} / ${story.pages.length}`;
-  document.getElementById('page-scene').textContent = page.scene;
+
+  // シーンの絵文字を1文字ずつアニメーションさせる（動画風）
+  const sceneEl = document.getElementById('page-scene');
+  sceneEl.innerHTML = '';
+  const anims = ['anim-bounce', 'anim-float', 'anim-wiggle'];
+  [...page.scene].forEach((ch, ci) => {
+    const sp = document.createElement('span');
+    sp.className = 'actor ' + anims[(currentPage + ci) % anims.length];
+    sp.style.animationDelay = (ci * 0.2) + 's';
+    sp.textContent = ch;
+    sceneEl.appendChild(sp);
+  });
+  // ページめくりアニメーション
+  const book = document.getElementById('book');
+  book.classList.remove('turn');
+  void book.offsetWidth; // reflowでアニメーションを再発火
+  book.classList.add('turn');
+
   document.getElementById('page-jp').textContent = page.jp;
 
   const textEl = document.getElementById('page-text');
@@ -342,37 +394,102 @@ function showPopup(el, meaning, e) {
   speak(el.textContent.trim().replace(/[^a-zA-Z']/g, ''));
 }
 
-function speak(text) {
+// 英語ネイティブボイスを自動選択（Edge Natural > Google > en-US）
+let enVoice = null;
+function pickVoice() {
   if (!window.speechSynthesis) return;
+  const vs = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+  enVoice = vs.find(v => /Natural/i.test(v.name) && v.lang === 'en-US')
+         || vs.find(v => /Google/i.test(v.name) && v.lang === 'en-US')
+         || vs.find(v => v.lang === 'en-US') || vs[0] || null;
+}
+if (window.speechSynthesis) {
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+
+function speak(text, onend) {
+  if (!window.speechSynthesis) { if (onend) onend(); return; }
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'en-US'; u.rate = 0.85;
+  if (enVoice) u.voice = enVoice;
+  if (onend) u.onend = onend;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
 
+function finishStory() {
+  const story = STORIES[currentStory];
+  stamps[currentStory] = true;
+  localStorage.setItem('reader_stamps', JSON.stringify(stamps));
+  document.getElementById('finish-story-name').textContent = `「${story.title}」をよみおわったよ！`;
+  document.getElementById('finish-overlay').classList.add('show');
+}
+
+// ── じどう再生（動画のように音声つきでページが進む） ──
+let autoPlay = false;
+let autoTimer = null;
+function startAuto() {
+  autoPlay = true;
+  const btn = document.getElementById('btn-auto');
+  btn.textContent = '⏸ とめる';
+  btn.classList.add('playing');
+  playCurrentPage();
+}
+function stopAuto() {
+  autoPlay = false;
+  clearTimeout(autoTimer);
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  const btn = document.getElementById('btn-auto');
+  btn.textContent = '▶ じどう';
+  btn.classList.remove('playing');
+}
+function playCurrentPage() {
+  if (!autoPlay) return;
+  const story = STORIES[currentStory];
+  speak(story.pages[currentPage].en, () => {
+    if (!autoPlay) return;
+    autoTimer = setTimeout(() => {
+      if (!autoPlay) return;
+      if (currentPage < story.pages.length - 1) {
+        currentPage++;
+        renderPage();
+        playCurrentPage();
+      } else {
+        stopAuto();
+        finishStory();
+      }
+    }, 1200);
+  });
+}
+document.getElementById('btn-auto').addEventListener('click', () => {
+  autoPlay ? stopAuto() : startAuto();
+});
+
 document.getElementById('btn-speak').addEventListener('click', () => {
+  stopAuto();
   const page = STORIES[currentStory].pages[currentPage];
   speak(page.en);
 });
 
 document.getElementById('btn-prev').addEventListener('click', () => {
+  stopAuto();
   if (currentPage > 0) { currentPage--; renderPage(); }
 });
 
 document.getElementById('btn-next').addEventListener('click', () => {
+  stopAuto();
   const story = STORIES[currentStory];
   if (currentPage < story.pages.length - 1) {
     currentPage++;
     renderPage();
   } else {
-    stamps[currentStory] = true;
-    localStorage.setItem('reader_stamps', JSON.stringify(stamps));
-    document.getElementById('finish-story-name').textContent = `「${story.title}」をよみおわったよ！`;
-    document.getElementById('finish-overlay').classList.add('show');
+    finishStory();
   }
 });
 
 document.getElementById('back-list-btn').addEventListener('click', () => {
+  stopAuto();
   document.getElementById('reader').style.display = 'none';
   document.getElementById('story-list').style.display = 'block';
   renderStampList();
@@ -383,10 +500,6 @@ document.getElementById('finish-ok-btn').addEventListener('click', () => {
   document.getElementById('reader').style.display = 'none';
   document.getElementById('story-list').style.display = 'block';
   renderStampList();
-});
-
-document.querySelectorAll('.story-card').forEach(card => {
-  card.addEventListener('click', () => openStory(Number(card.dataset.story)));
 });
 
 renderStampList();
